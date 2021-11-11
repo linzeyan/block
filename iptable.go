@@ -7,8 +7,6 @@ import (
 	"github.com/coreos/go-iptables/iptables"
 )
 
-var iptable, _ = iptables.New()
-
 func parseIP(s string) (ip string) {
 	if net.ParseIP(s) != nil {
 		ip = fmt.Sprintf("%s%s", s, "/32")
@@ -21,10 +19,11 @@ func parseIP(s string) (ip string) {
 /* opt: append, insert, delete */
 func BlockInbound(opt, ip string) bool {
 	ipstr := parseIP(ip)
+	var iptable = NewIptables()
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.Append("filter", "INPUT", "-s", ipstr, "-j", "DROP")
+		err = iptable.AppendUnique("filter", "INPUT", "-s", ipstr, "-j", "DROP")
 	case "insert":
 		err = iptable.Insert("filter", "INPUT", 1, "-s", ipstr, "-j", "DROP")
 	case "delete":
@@ -42,14 +41,15 @@ func BlockInbound(opt, ip string) bool {
 /* opt: append, insert, delete */
 func BlockOutbound(opt, ip string) bool {
 	ipstr := parseIP(ip)
+	var iptable = NewIptables()
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.Append("filter", "OUTPUT", "-s", ipstr, "-j", "DROP")
+		err = iptable.AppendUnique("filter", "OUTPUT", "-d", ipstr, "-j", "DROP")
 	case "insert":
-		err = iptable.Insert("filter", "OUTPUT", 1, "-s", ipstr, "-j", "DROP")
+		err = iptable.Insert("filter", "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
 	case "delete":
-		err = iptable.Delete("filter", "OUTPUT", "-s", ipstr, "-j", "DROP")
+		err = iptable.Delete("filter", "OUTPUT", "-d", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -58,4 +58,13 @@ func BlockOutbound(opt, ip string) bool {
 		return false
 	}
 	return true
+}
+
+func NewIptables() *iptables.IPTables {
+	ipt, err := iptables.New()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	return ipt
 }
