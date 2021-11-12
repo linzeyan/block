@@ -7,6 +7,8 @@ import (
 	"github.com/coreos/go-iptables/iptables"
 )
 
+const Table string = "filter"
+
 func parseIP(s string) (ip string) {
 	if net.ParseIP(s) != nil {
 		ip = fmt.Sprintf("%s%s", s, "/32")
@@ -23,11 +25,11 @@ func BlockInbound(opt, ip string) bool {
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.AppendUnique("filter", "INPUT", "-s", ipstr, "-j", "DROP")
+		err = iptable.AppendUnique(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	case "insert":
-		err = iptable.Insert("filter", "INPUT", 1, "-s", ipstr, "-j", "DROP")
+		err = iptable.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
 	case "delete":
-		err = iptable.Delete("filter", "INPUT", "-s", ipstr, "-j", "DROP")
+		err = iptable.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -45,11 +47,11 @@ func BlockOutbound(opt, ip string) bool {
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.AppendUnique("filter", "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = iptable.AppendUnique(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	case "insert":
-		err = iptable.Insert("filter", "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
+		err = iptable.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
 	case "delete":
-		err = iptable.Delete("filter", "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = iptable.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -58,6 +60,40 @@ func BlockOutbound(opt, ip string) bool {
 		return false
 	}
 	return true
+}
+
+func ClearRules(opt string) bool {
+	var iptable = NewIptables()
+	var err error
+	switch opt {
+	case "in":
+		err = iptable.ClearChain(Table, "INPUT")
+	case "out":
+		err = iptable.ClearChain(Table, "OUTPUT")
+	}
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	return true
+}
+
+func ListRules(opt string) ([]string, bool) {
+	var iptable = NewIptables()
+	var err error
+	var result []string
+	switch opt {
+	case "in":
+		result, err = iptable.List(Table, "INPUT")
+	case "out":
+		result, err = iptable.List(Table, "OUTPUT")
+	}
+	if err != nil {
+		fmt.Println(err)
+		return nil, false
+	}
+	return result, true
+
 }
 
 func NewIptables() *iptables.IPTables {
