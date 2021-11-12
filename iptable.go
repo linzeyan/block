@@ -9,6 +9,8 @@ import (
 
 const Table string = "filter"
 
+var Ipt = NewIptables()
+
 func parseIP(s string) (ip string) {
 	if net.ParseIP(s) != nil {
 		ip = fmt.Sprintf("%s%s", s, "/32")
@@ -21,15 +23,14 @@ func parseIP(s string) (ip string) {
 /* opt: append, insert, delete */
 func BlockInbound(opt, ip string) bool {
 	ipstr := parseIP(ip)
-	var iptable = NewIptables()
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.AppendUnique(Table, "INPUT", "-s", ipstr, "-j", "DROP")
+		err = Ipt.AppendUnique(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	case "insert":
-		err = iptable.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
+		err = Ipt.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
 	case "delete":
-		err = iptable.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
+		err = Ipt.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -43,15 +44,14 @@ func BlockInbound(opt, ip string) bool {
 /* opt: append, insert, delete */
 func BlockOutbound(opt, ip string) bool {
 	ipstr := parseIP(ip)
-	var iptable = NewIptables()
 	var err error
 	switch opt {
 	case "append":
-		err = iptable.AppendUnique(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = Ipt.AppendUnique(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	case "insert":
-		err = iptable.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
+		err = Ipt.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
 	case "delete":
-		err = iptable.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = Ipt.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -63,13 +63,12 @@ func BlockOutbound(opt, ip string) bool {
 }
 
 func ClearRules(opt string) bool {
-	var iptable = NewIptables()
 	var err error
 	switch opt {
 	case "in":
-		err = iptable.ClearChain(Table, "INPUT")
+		err = Ipt.ClearChain(Table, "INPUT")
 	case "out":
-		err = iptable.ClearChain(Table, "OUTPUT")
+		err = Ipt.ClearChain(Table, "OUTPUT")
 	}
 	if err != nil {
 		fmt.Println(err)
@@ -79,14 +78,13 @@ func ClearRules(opt string) bool {
 }
 
 func ListRules(opt string) ([]string, bool) {
-	var iptable = NewIptables()
 	var err error
 	var result []string
 	switch opt {
 	case "in":
-		result, err = iptable.List(Table, "INPUT")
+		result, err = Ipt.List(Table, "INPUT")
 	case "out":
-		result, err = iptable.List(Table, "OUTPUT")
+		result, err = Ipt.List(Table, "OUTPUT")
 	}
 	if err != nil {
 		fmt.Println(err)

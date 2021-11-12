@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/linzeyan/block"
+	"github.com/linzeyan/block/log"
 )
 
 const (
@@ -18,9 +19,10 @@ Options:
 )
 
 var (
-	traffic = flag.String("t", "in", "Specify Block in/out bound traffic")
+	traffic = flag.String("t", "in", "Specify Block in/out bound traffic or log")
 	option  = flag.String("o", "insert", "Specify insert/append/delete/clear/list rule")
 	ip      = flag.String("ip", "", "Specify IP or CIDRs")
+	logFile = flag.String("f", "", "Specify log file")
 )
 
 func main() {
@@ -69,6 +71,15 @@ func main() {
 				printUsage()
 			}
 		default:
+			printUsage()
+		}
+	case "log":
+		if *logFile != "" {
+			resp := log.GrepLog(*logFile)
+			for i := range resp {
+				block.BlockInbound(*option, resp[i])
+			}
+		} else {
 			printUsage()
 		}
 	default:
