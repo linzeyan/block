@@ -3,34 +3,24 @@ package block
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/coreos/go-iptables/iptables"
 )
 
 const Table string = "filter"
 
-var Ipt = NewIptables()
-
-func parseIP(s string) (ip string) {
-	if net.ParseIP(s) != nil {
-		ip = fmt.Sprintf("%s%s", s, "/32")
-	} else if _, cidr, _ := net.ParseCIDR(s); cidr != nil {
-		ip = cidr.String()
-	}
-	return
-}
-
 /* opt: append, insert, delete */
 func BlockInbound(opt, ip string) bool {
-	ipstr := parseIP(ip)
+	var ipt, ipstr = NewIptables(ip)
 	var err error
 	switch opt {
 	case "append":
-		err = Ipt.AppendUnique(Table, "INPUT", "-s", ipstr, "-j", "DROP")
+		err = ipt.AppendUnique(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	case "insert":
-		err = Ipt.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
+		err = ipt.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
 	case "delete":
-		err = Ipt.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
+		err = ipt.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -43,15 +33,15 @@ func BlockInbound(opt, ip string) bool {
 
 /* opt: append, insert, delete */
 func BlockOutbound(opt, ip string) bool {
-	ipstr := parseIP(ip)
+	var ipt, ipstr = NewIptables(ip)
 	var err error
 	switch opt {
 	case "append":
-		err = Ipt.AppendUnique(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = ipt.AppendUnique(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	case "insert":
-		err = Ipt.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
+		err = ipt.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
 	case "delete":
-		err = Ipt.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = ipt.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -63,12 +53,13 @@ func BlockOutbound(opt, ip string) bool {
 }
 
 func ClearRules(opt string) bool {
+	var ipt, _ = NewIptables(``)
 	var err error
 	switch opt {
 	case "in":
-		err = Ipt.ClearChain(Table, "INPUT")
+		err = ipt.ClearChain(Table, "INPUT")
 	case "out":
-		err = Ipt.ClearChain(Table, "OUTPUT")
+		err = ipt.ClearChain(Table, "OUTPUT")
 	}
 	if err != nil {
 		fmt.Println(err)
@@ -78,13 +69,14 @@ func ClearRules(opt string) bool {
 }
 
 func ListRules(opt string) ([]string, bool) {
+	var ipt, _ = NewIptables(``)
 	var err error
 	var result []string
 	switch opt {
 	case "in":
-		result, err = Ipt.List(Table, "INPUT")
+		result, err = ipt.List(Table, "INPUT")
 	case "out":
-		result, err = Ipt.List(Table, "OUTPUT")
+		result, err = ipt.List(Table, "OUTPUT")
 	}
 	if err != nil {
 		fmt.Println(err)
@@ -94,11 +86,27 @@ func ListRules(opt string) ([]string, bool) {
 
 }
 
-func NewIptables() *iptables.IPTables {
+func NewIptables(s string) (*iptables.IPTables, string) {
+	var ip string
+	/* Parse IPv6 */
+	if i := net.ParseIP(s); i.To4() == nil {
+		ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv6)
+		if err != nil {
+			fmt.Println(err)
+			return nil, ""
+		}
+		ip = strings.TrimSuffix(s, "\n")
+		return ipt, ip
+	} else if i != nil {
+		/* Parse IPv4 */
+		ip = strings.TrimSuffix(s, "\n")
+	} else if _, cidr, _ := net.ParseCIDR(s); cidr != nil {
+		ip = cidr.String()
+	}
 	ipt, err := iptables.New()
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return nil, ""
 	}
-	return ipt
+	return ipt, ip
 }
