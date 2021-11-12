@@ -15,14 +15,18 @@ import (
 const (
 	// TimeStamp: T09:45:38+08:00
 	TimeFormat string = "15:04:"
-	WorkingDir string = "/nginx/logs"
+)
+
+var (
+	Limit   int    = 100
+	WorkDir string = "/nginx/logs"
 )
 
 func GrepLog(file string) []string {
 	ctx := context.Background()
 	target := fmt.Sprintf(`%s%s`, "T", time.Now().Add(-1*time.Minute).Local().Format(TimeFormat))
 	cmd := exec.CommandContext(ctx, "grep", target, file)
-	cmd.Dir = WorkingDir
+	cmd.Dir = WorkDir
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println(err)

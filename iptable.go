@@ -52,6 +52,7 @@ func BlockOutbound(opt, ip string) bool {
 	return true
 }
 
+/* opt: clear */
 func ClearRules(opt string) bool {
 	var ipt, _ = NewIptables(``)
 	var err error
@@ -68,6 +69,7 @@ func ClearRules(opt string) bool {
 	return true
 }
 
+/* opt: list */
 func ListRules(opt string) ([]string, bool) {
 	var ipt, _ = NewIptables(``)
 	var err error
@@ -83,7 +85,6 @@ func ListRules(opt string) ([]string, bool) {
 		return nil, false
 	}
 	return result, true
-
 }
 
 func NewIptables(s string) (*iptables.IPTables, string) {
