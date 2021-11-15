@@ -52,27 +52,48 @@ func BlockOutbound(opt, ip string) bool {
 	return true
 }
 
-/* opt: clear */
-func ClearRules(opt string) bool {
-	var ipt, _ = NewIptables(``)
-	var err error
-	switch opt {
-	case "in":
-		err = ipt.ClearChain(Table, "INPUT")
-	case "out":
-		err = ipt.ClearChain(Table, "OUTPUT")
-	}
+/* opt: list, clear */
+func ListRules(opt string, clear bool) ([]string, bool) {
+	var result []string = []string{"IPv4"}
+	/* IPv4 */
+	var ipt, err = iptables.New()
 	if err != nil {
 		fmt.Println(err)
-		return false
+		return result, false
 	}
-	return true
+	temp, _ := execTwice(ipt, opt, clear)
+	for i := range temp {
+		result = append(result, temp[i])
+	}
+	/* IPv6 */
+	ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
+	if err != nil {
+		fmt.Println(err)
+		return result, false
+	}
+	result = append(result, "IPv6")
+	temp, _ = execTwice(ipt, opt, clear)
+	for i := range temp {
+		result = append(result, temp[i])
+	}
+	return result, true
 }
 
-/* opt: list */
-func ListRules(opt string) ([]string, bool) {
-	var ipt, _ = NewIptables(``)
+func execTwice(ipt *iptables.IPTables, opt string, clear bool) ([]string, bool) {
 	var err error
+	if clear {
+		switch opt {
+		case "in":
+			err = ipt.ClearChain(Table, "INPUT")
+		case "out":
+			err = ipt.ClearChain(Table, "OUTPUT")
+		}
+		if err != nil {
+			fmt.Println(err)
+			return nil, false
+		}
+	}
+
 	var result []string
 	switch opt {
 	case "in":

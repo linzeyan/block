@@ -19,8 +19,8 @@ Options:
 )
 
 var (
-	traffic = flag.String("t", "in", "Specify Block in/out bound traffic or log")
-	option  = flag.String("o", "insert", "Specify insert/append/delete/clear/list rule")
+	option  = flag.String("o", "in", "Specify Block in/out bound traffic or log")
+	action  = flag.String("a", "insert", "Specify insert/append/delete/clear/list rule")
 	ip      = flag.String("ip", "", "Specify IP or CIDRs")
 	logFile = flag.String("f", "", "Specify log file")
 	limit   = flag.Int("limit", 100, "Limit requests per minute")
@@ -33,13 +33,15 @@ func main() {
 	}
 	flag.Parse()
 
-	switch *traffic {
+	switch *option {
 	case "in":
-		switch *option {
-		case "clear":
-			block.ClearRules(*traffic)
-		case "list":
-			resp, ok := block.ListRules(*traffic)
+		switch *action {
+		case "clear", "list":
+			var c bool
+			if *action == "clear" {
+				c = true
+			}
+			resp, ok := block.ListRules(*option, c)
 			if ok {
 				for i := range resp {
 					fmt.Println(resp[i])
@@ -47,7 +49,7 @@ func main() {
 			}
 		case "insert", "append", "delete":
 			if *ip != "" {
-				block.BlockInbound(*option, *ip)
+				block.BlockInbound(*action, *ip)
 			} else {
 				printUsage()
 			}
@@ -55,11 +57,13 @@ func main() {
 			printUsage()
 		}
 	case "out":
-		switch *option {
-		case "clear":
-			block.ClearRules(*traffic)
-		case "list":
-			resp, ok := block.ListRules(*traffic)
+		switch *action {
+		case "clear", "list":
+			var c bool
+			if *action == "clear" {
+				c = true
+			}
+			resp, ok := block.ListRules(*option, c)
 			if ok {
 				for i := range resp {
 					fmt.Println(resp[i])
@@ -67,7 +71,7 @@ func main() {
 			}
 		case "insert", "append", "delete":
 			if *ip != "" {
-				block.BlockOutbound(*option, *ip)
+				block.BlockOutbound(*action, *ip)
 			} else {
 				printUsage()
 			}
@@ -79,7 +83,7 @@ func main() {
 			log.Limit = *limit
 			resp := log.GrepLog(*logFile)
 			for i := range resp {
-				block.BlockInbound(*option, resp[i])
+				block.BlockInbound(*action, resp[i])
 			}
 		} else {
 			printUsage()
