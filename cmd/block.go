@@ -23,6 +23,7 @@ var (
 	option  = flag.String("o", "insert", "Specify insert/append/delete/clear/list rule")
 	ip      = flag.String("ip", "", "Specify IP or CIDRs")
 	logFile = flag.String("f", "", "Specify log file")
+	limit   = flag.Int("limit", 100, "Limit requests per minute")
 )
 
 func main() {
@@ -75,6 +76,7 @@ func main() {
 		}
 	case "log":
 		if *logFile != "" {
+			log.Limit = *limit
 			resp := log.GrepLog(*logFile)
 			for i := range resp {
 				block.BlockInbound(*option, resp[i])

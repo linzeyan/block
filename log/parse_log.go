@@ -51,13 +51,23 @@ func parseLog(content []byte) (ips []string) {
 		data = append(data, temp)
 	}
 	rootNode := dasel.New(data)
-	results, err := rootNode.QueryMultiple(".[*].client")
+	selector, err := rootNode.QueryMultiple(".[*].client")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	for _, n := range results {
-		ips = append(ips, fmt.Sprintln(n.InterfaceValue()))
+	var m = make(map[string]int)
+	for _, n := range selector {
+		ip := fmt.Sprint(n.InterfaceValue())
+		if _, ok := m[ip]; ok {
+			m[ip]++
+		}
+		m[ip] = 1
+	}
+	for k, v := range m {
+		if v >= Limit {
+			ips = append(ips, k)
+		}
 	}
 	return
 }
