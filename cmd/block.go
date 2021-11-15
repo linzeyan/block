@@ -33,59 +33,43 @@ func main() {
 	}
 	flag.Parse()
 
-	switch *option {
-	case "in":
-		switch *action {
-		case "clear", "list":
-			var c bool
-			if *action == "clear" {
-				c = true
+	switch *action {
+	case "clear", "list":
+		var c bool
+		if *action == "clear" {
+			c = true
+		}
+		resp, ok := block.ListRules(*option, c)
+		if ok {
+			for i := range resp {
+				fmt.Println(resp[i])
 			}
-			resp, ok := block.ListRules(*option, c)
-			if ok {
-				for i := range resp {
-					fmt.Println(resp[i])
-				}
-			}
-		case "insert", "append", "delete":
+		}
+	case "insert", "append", "delete":
+		switch *option {
+		case "in":
 			if *ip != "" {
 				block.BlockInbound(*action, *ip)
 			} else {
 				printUsage()
 			}
-		default:
-			printUsage()
-		}
-	case "out":
-		switch *action {
-		case "clear", "list":
-			var c bool
-			if *action == "clear" {
-				c = true
-			}
-			resp, ok := block.ListRules(*option, c)
-			if ok {
-				for i := range resp {
-					fmt.Println(resp[i])
-				}
-			}
-		case "insert", "append", "delete":
+		case "out":
 			if *ip != "" {
 				block.BlockOutbound(*action, *ip)
 			} else {
 				printUsage()
 			}
-		default:
-			printUsage()
-		}
-	case "log":
-		if *logFile != "" {
-			log.Limit = *limit
-			resp := log.GrepLog(*logFile)
-			for i := range resp {
-				block.BlockInbound(*action, resp[i])
+		case "log":
+			if *logFile != "" {
+				log.Limit = *limit
+				resp := log.GrepLog(*logFile)
+				for i := range resp {
+					block.BlockInbound(*action, resp[i])
+				}
+			} else {
+				printUsage()
 			}
-		} else {
+		default:
 			printUsage()
 		}
 	default:

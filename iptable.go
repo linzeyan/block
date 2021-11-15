@@ -10,7 +10,7 @@ import (
 
 const Table string = "filter"
 
-/* opt: append, insert, delete */
+/* action: append, insert, delete */
 func BlockInbound(opt, ip string) bool {
 	var ipt, ipstr = NewIptables(ip)
 	var err error
@@ -20,7 +20,7 @@ func BlockInbound(opt, ip string) bool {
 	case "insert":
 		err = ipt.Insert(Table, "INPUT", 1, "-s", ipstr, "-j", "DROP")
 	case "delete":
-		err = ipt.Delete(Table, "INPUT", "-s", ipstr, "-j", "DROP")
+		err = ipt.DeleteIfExists(Table, "INPUT", "-s", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -31,7 +31,7 @@ func BlockInbound(opt, ip string) bool {
 	return true
 }
 
-/* opt: append, insert, delete */
+/* action: append, insert, delete */
 func BlockOutbound(opt, ip string) bool {
 	var ipt, ipstr = NewIptables(ip)
 	var err error
@@ -41,7 +41,7 @@ func BlockOutbound(opt, ip string) bool {
 	case "insert":
 		err = ipt.Insert(Table, "OUTPUT", 1, "-d", ipstr, "-j", "DROP")
 	case "delete":
-		err = ipt.Delete(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
+		err = ipt.DeleteIfExists(Table, "OUTPUT", "-d", ipstr, "-j", "DROP")
 	default:
 		return false
 	}
@@ -52,7 +52,7 @@ func BlockOutbound(opt, ip string) bool {
 	return true
 }
 
-/* opt: list, clear */
+/* action: list, clear */
 func ListRules(opt string, clear bool) ([]string, bool) {
 	var result []string = []string{"IPv4"}
 	/* IPv4 */
@@ -61,7 +61,7 @@ func ListRules(opt string, clear bool) ([]string, bool) {
 		fmt.Println(err)
 		return result, false
 	}
-	temp, _ := execTwice(ipt, opt, clear)
+	temp, _ := clearAndList(ipt, opt, clear)
 	for i := range temp {
 		result = append(result, temp[i])
 	}
@@ -72,22 +72,21 @@ func ListRules(opt string, clear bool) ([]string, bool) {
 		return result, false
 	}
 	result = append(result, "IPv6")
-	temp, _ = execTwice(ipt, opt, clear)
+	temp, _ = clearAndList(ipt, opt, clear)
 	for i := range temp {
 		result = append(result, temp[i])
 	}
 	return result, true
 }
 
-func execTwice(ipt *iptables.IPTables, opt string, clear bool) ([]string, bool) {
+func clearAndList(ipt *iptables.IPTables, opt string, clear bool) ([]string, bool) {
 	var err error
+	var chain string = "INPUT"
+	if opt == "out" {
+		chain = "OUTPUT"
+	}
 	if clear {
-		switch opt {
-		case "in":
-			err = ipt.ClearChain(Table, "INPUT")
-		case "out":
-			err = ipt.ClearChain(Table, "OUTPUT")
-		}
+		err = ipt.ClearChain(Table, chain)
 		if err != nil {
 			fmt.Println(err)
 			return nil, false
@@ -95,12 +94,7 @@ func execTwice(ipt *iptables.IPTables, opt string, clear bool) ([]string, bool) 
 	}
 
 	var result []string
-	switch opt {
-	case "in":
-		result, err = ipt.List(Table, "INPUT")
-	case "out":
-		result, err = ipt.List(Table, "OUTPUT")
-	}
+	result, err = ipt.List(Table, chain)
 	if err != nil {
 		fmt.Println(err)
 		return nil, false
