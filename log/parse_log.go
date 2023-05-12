@@ -18,10 +18,11 @@ const (
 )
 
 var (
-	Limit   int    = 100
-	WorkDir string = "/nginx/logs"
+	Limit   int    = 100           // iptables block threshold
+	WorkDir string = "/nginx/logs" // directory of log files
 )
 
+/* GrepLog filter log from file. */
 func GrepLog(file string) []string {
 	ctx := context.Background()
 	target := fmt.Sprintf(`%s%s`, "T", time.Now().Add(-1*time.Minute).Local().Format(TimeFormat))
