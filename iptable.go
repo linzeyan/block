@@ -10,7 +10,10 @@ import (
 
 const Table string = "filter"
 
-/* action: append, insert, delete */
+/*
+BlockInbound follows opt to operate ip, if no error returns true.
+opt can be append, insert or delete.
+*/
 func BlockInbound(opt, ip string) bool {
 	var ipt, ipstr = NewIptables(ip)
 	var err error
@@ -31,7 +34,10 @@ func BlockInbound(opt, ip string) bool {
 	return true
 }
 
-/* action: append, insert, delete */
+/*
+BlockOutbound follows opt to operate ip, if no error returns true.
+opt can be append, insert or delete.
+*/
 func BlockOutbound(opt, ip string) bool {
 	var ipt, ipstr = NewIptables(ip)
 	var err error
@@ -52,7 +58,10 @@ func BlockOutbound(opt, ip string) bool {
 	return true
 }
 
-/* action: list, clear */
+/*
+ListRules returns IPv4 and IPv6 rules, if no error returns true.
+opt can be list or clear.
+*/
 func ListRules(opt string, clear bool) ([]string, bool) {
 	var result []string = []string{"IPv4"}
 	/* IPv4 */
@@ -61,10 +70,9 @@ func ListRules(opt string, clear bool) ([]string, bool) {
 		fmt.Println(err)
 		return result, false
 	}
-	temp, _ := clearAndList(ipt, opt, clear)
-	for i := range temp {
-		result = append(result, temp[i])
-	}
+	tempIPv4, _ := clearAndList(ipt, opt, clear)
+	result = append(result, tempIPv4...)
+
 	/* IPv6 */
 	ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
 	if err != nil {
@@ -72,13 +80,13 @@ func ListRules(opt string, clear bool) ([]string, bool) {
 		return result, false
 	}
 	result = append(result, "IPv6")
-	temp, _ = clearAndList(ipt, opt, clear)
-	for i := range temp {
-		result = append(result, temp[i])
-	}
+	tempIPv6, _ := clearAndList(ipt, opt, clear)
+	result = append(result, tempIPv6...)
+
 	return result, true
 }
 
+/* clearAndList returns rules, if no error returns true. */
 func clearAndList(ipt *iptables.IPTables, opt string, clear bool) ([]string, bool) {
 	var err error
 	var chain string = "INPUT"
@@ -102,6 +110,7 @@ func clearAndList(ipt *iptables.IPTables, opt string, clear bool) ([]string, boo
 	return result, true
 }
 
+/* NewIptables parse s to an IP address, and returns a new IPTables and an IP to configured. */
 func NewIptables(s string) (*iptables.IPTables, string) {
 	var ip string
 	/* Parse IPv6 */
