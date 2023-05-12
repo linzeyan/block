@@ -13,7 +13,7 @@ require (
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
-	golang.org/x/net v0.0.0-20210924151903-3ad01bbaa167 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
